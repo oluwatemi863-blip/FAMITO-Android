@@ -1,0 +1,55 @@
+name: Build FAMITO APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build FAMITO Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract FAMITO project
+        run: |
+          mkdir -p famito
+          unzip -q FAMITO_repaired_project.zip -d famito
+          echo "FAMITO project extracted:"
+          ls -la famito
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Build FAMITO APK
+        working-directory: famito
+        run: |
+          gradle :app:assembleDebug --stacktrace
+
+      - name: Find APK
+        working-directory: famito
+        run: |
+          echo "APK files:"
+          find app/build/outputs/apk -type f -name "*.apk" -print
+
+      - name: Upload FAMITO APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FAMITO-APK
+          path: famito/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
